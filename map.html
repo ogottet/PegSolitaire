@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <div id="map" style="width:100%;height:900px"></div>
+    <h1></h1>
+    <script>
+        function myMap() {
+            var icon = {
+                url: "marqueur.png", // url
+                scaledSize: new google.maps.Size(70, 70), // scaled size
+                origin: new google.maps.Point(0, 0), // origin
+                anchor: new google.maps.Point(0, 0) // anchor
+            };
+
+            var myCenter = new google.maps.LatLng(46.293400, 7.536000);
+            var mapCanvas = document.getElementById("map");
+            var mapOptions = {
+                center: myCenter,
+                zoom: 17
+            };
+            var map = new google.maps.Map(mapCanvas, mapOptions);
+            var marker = new google.maps.Marker({
+                position: myCenter,
+                icon: icon
+            });
+            marker.setMap(map);
+
+            //quand on click, on a notre "adresse qui apparait
+            var infoWindow = new google.maps.InfoWindow({
+                content: "<b>Super Mario Solitaire</b></br>HES-SO Valais // Bsc BIT</br>3960 Sierre"
+            });
+
+            google.maps.event.addListener(marker, 'click', function() {
+                infoWindow.open(map, marker);
+
+
+            });
+
+            google.maps.event.addListener(map, 'click', function() {
+                infoWindow.close();
+                marker.open = false;
+            });
+        }
+        google.maps.event.addDomListener(window, 'load', initialize)
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDVfxwtcvkSuEBtaPf38TNt_uIExdSvVkQ&callback=myMap"></script>
+</body>
+
+</html>

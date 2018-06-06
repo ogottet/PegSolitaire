@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="CSS/styles.css" type="text/css">
+    <title>RIA: Peg Solitaire</title>
+    <style>
+        a:link,
+        a:visited,
+        a:active {
+            color: #CCC;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #CCC;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body style="overflow: hidden;">
+    <script>
+        var pegArray = [ // two dimensional array to store the peg values - empty [-1], black [0], white [1] or black with red highlight [2]
+            [-1, -1, 0, 0, 0, -1, -1],
+            [-1, -1, 0, 0, 0, -1, -1],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [-1, -1, 0, 0, 0, -1, -1],
+            [-1, -1, 0, 0, 0, -1, -1]
+        ];
+
+        function drag(ev) { // function to initialize the drag
+            ev.dataTransfer.setData('text', ev.target.id);
+        }
+
+        function allowDrop(ev) { // function that allows the drop
+            ev.preventDefault();
+        }
+
+        function drop(ev) { // function to drop an avatar and change the visibility of the form
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData('text');
+            ev.target.appendChild(document.getElementById(data));
+            document.getElementById(data).style.height = "100%";
+            document.getElementById(data).style.width = "100%";
+            document.getElementById('avatar').value = document.getElementById(data).src.replace(/^.*[\\\/]/, '');
+            document.getElementById('enterName').innerHTML = 'enter your name:';
+            document.getElementById('firstName').type = 'text';
+            document.getElementById('mode').classList.remove('hidden');
+            document.getElementById('submit-button').className = 'submit-button';
+            document.getElementById('div1').style.visibility = 'hidden';
+        }
+    </script>
+    <main>
+        <p id="demo"></p>
+        <div id="divMain">
+            <div id="divMiddle"> <img src="images/top.png" width="800" height="100" alt="Super Mario Solitaire"><br>
+                <div id="divInner">
+                    <div id="div1"> <img draggable="true" ondragstart="drag(event)" id="drag1" src="images/1.png" class="avatar img" hspace="20"> <img draggable="true" ondragstart="drag(event)" id="drag2" src="images/2.png" class="avatar img"> <img draggable="true" ondragstart="drag(event)" id="drag3" src="images/3.png" class="avatar img"> <img draggable="true" ondragstart="drag(event)" id="drag4" src="images/4.png" class="avatar img"> <img draggable="true" ondragstart="drag(event)" id="drag5" src="images/5.png" class="avatar img"> </div>
+                    <div id="div2" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+                    <div id="div3">
+                        <form class="form-container" onSubmit="submitForm(); return false;" method="get" id="form">
+                            <h2 id="enterName"></h2>
+                            <input type="hidden" id="avatar" name="avatar" value="">
+                            <input class="form-field" type="hidden" id="firstName" name="firstName" required />
+                            <div class="hidden" id="mode"><input name="levelMode" id="levelMode" type="checkbox" value="levelMode"><label for="levelMode" style="color: #CCC"> play in level mode</label><br><br></div>
+                            <div class="submit-container">
+                                <input id="submit-button" class="hidden" type="submit" value="play solitaire!" />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <table width="80%" border="0" align="center">
+                    <tr>
+                        <td><a href="tuto.html" target="_blank">Tutorial video</a></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <script>
+            function submitForm() {
+                if (document.getElementById('levelMode').checked == true) {
+                    var fAction = "v2/game.html";
+                    var mode = "level";
+                    sessionStorage.setItem("levelUp", false);
+                    sessionStorage.setItem("totalTime", 0);
+                    sessionStorage.setItem("level", parseInt(1));
+                } else {
+                    var fAction = "game.html";
+                    var mode = "classic";
+                };
+                if (fAction == 'game.html') {
+                    pegArray = [ // two dimensional array to store the peg values - empty [-1], black [0], white [1] or black with red highlight [2]
+                        [-1, -1, 0, 0, 0, -1, -1],
+                        [-1, -1, 0, 0, 0, -1, -1],
+                        [0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 1, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0],
+                        [-1, -1, 0, 0, 0, -1, -1],
+                        [-1, -1, 0, 0, 0, -1, -1]
+                    ];
+                    pegArrayJSON = JSON.stringify(pegArray);
+                    localStorage.setItem('board', pegArrayJSON);
+                } else {
+                    pegArray = [ // two dimensional array to store the peg values - empty [-1], black [0], white [1] or black with red highlight [2]
+                        [-1, -1, -1, -1, -1, -1, -1],
+                        [-1, -1, -1, -1, -1, -1, -1],
+                        [-1, -1, -1, -1, -1, -1, -1],
+                        [-1, -1, 1, 0, 0, -1, -1],
+                        [-1, -1, -1, -1, -1, -1, -1],
+                        [-1, -1, -1, -1, -1, -1, -1],
+                        [-1, -1, -1, -1, -1, -1, -1]
+                    ];
+                    pegArrayJSON = JSON.stringify(pegArray);
+                    localStorage.setItem('board', pegArrayJSON);
+                }
+                window.location = fAction + "?firstName=" + document.getElementById("firstName").value + "&avatar=" + document.getElementById("avatar").value + "&mode=" + mode;
+            }
+        </script>
+    </main>
+</body>
+
+</html>
