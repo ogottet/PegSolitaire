@@ -272,10 +272,45 @@ pegArray = JSON.parse(retrPegArray); // parse the boardArray from JSON to a two 
 
 drawCanvas(pegArray); // drav the canvas using the matrix from above
 
-function changeCanvas(event, callback) { // method to change the canvas (on click event)
+function changeCanvas(event) { // method to change the canvas (on click event)
     getSelectedPeg(event); // get the clicked peg on canvas x and y axis
     if (posX != undefined && posY != undefined) { // if a peg has been clicked
-        togglePeg(posX, posY); // toggle peg value
+		var pegValue = pegArray[posY][posX]; // get the value of the clicked peg
+		var highlightCheck = hasHighlighted(); // check if there is a highlighted peg (only one peg can be highlighted at the same time)
+		lastX = highlightCheck[1]; // save the x axis from the last processed pen
+		lastY = highlightCheck[0]; // save the y axis from the last processed pen
+		isInPossiblePegsArray = false; // store if the clicked peg is a valid move (used for checkPossiblePegsArray function)
+		checkPossiblePegsArray(posY, posX); // execute the check if the clicked peg is a valid move (contained in possiblee pegs array)
+		if (pegValue == 0) { // if the peg is black [0]
+			moveStarted = true; // set the flag to mark a move as started to true
+			possiblePegsArray = checkPossiblePegsForMove(posY, posX); // possible pegs for a valid move in an array (generate or regenerate the possible pegs array)
+			inPossiblePegsArray = false;
+			if (highlightCheck[0] > -1 && highlightCheck[1] > -1) { // if there is a highlighted peg
+				pegArray[highlightCheck[0]][highlightCheck[1]] = 0; // remove the highlight on the existing highlighted peg
+			};
+			pegValue = 2; // highlight the clicked peg
+		} else if (pegValue == 1) { // if the peg is white [1]
+			if (moveStarted && isInPossiblePegsArray && ((lastY == posY - 2) ||  (lastY == posY + 2) ||  (lastX == posX - 2) || (lastX == posX + 2))) { // if a move has started [moveStarted == true] and the move can be executed
+				if (lastY == (posY - 2)) {
+					deletePeg(lastX, (posY - 1));
+				} else if (lastY == (posY + 2)) {
+					deletePeg(lastX, (posY + 1));
+				} else if (lastX == (posX - 2)) {
+					deletePeg((posX - 1), lastY);
+				} else if (lastX == (posX + 2)) {
+					deletePeg((posX + 1), lastY);
+				};
+				pegValue = 0; // set the peg to black [0]
+				deletePeg(lastX, lastY); // set the last clicked peg to white [1]
+				moveStarted = false; // end the move [moveStarted == false]
+			}
+		} else if (pegValue == 2 && moveStarted) { // if the clicked peg is highlighted [2] and the move is started
+			pegValue = 0; // remove the highlight [0]
+			moveStarted = false; // end the move [moveStarted == false]
+		}
+		pegArray[posY][posX] = pegValue; // apply the change in pegArray defined above in this method
+		drawCanvas(pegArray); // draw the canvas
+		possibleMoves = countPossibleMoves(); // counting the number of possible moves after having toggeled this peg
     }
     if (!gameStarted) {
         timer.start({
@@ -299,55 +334,53 @@ function changeCanvas(event, callback) { // method to change the canvas (on clic
         audio = document.getElementById("audio"); // audio of the game page
         audio.play(); // Start to play the mario sound
     }
-    callback();
-}
-
-function noMoreMoves() { // function to execute when there are no more possible moves
-    var resultsWritten = false;
-    var timerVal;
-    if (possibleMoves == 0) { // if no more moves are possible
-        var blackPegs = countBlackPegs(); // count the resting black pegs
-        timer.stop(); // stop the timer
-        if (window.innerWidth < 810) {
-            timerVal = document.getElementById("timer2").innerHTML
-        } else {
-            timerVal = document.getElementById("timer1").innerHTML
-        }
-        if (blackPegs == 1) { // if just one black peg is left
-            var lastPegPosition = checkLastPegPosition(); // get the last black pegs position
-            if (lastPegPosition[0] == 3 && lastPegPosition[1] == 3) { // if the last black peg is in the middle of the board the game is completed
-                audio.pause();
-                audio = document.getElementById("winner"); // audio of the game page
-                audio.play();
-                window.alert("Congratulations! You won the game in " + timerVal + "!");
-                if (!resultsWritten) {
-                    localStorage.setItem(Math.floor(Date.now() / 10000), [1, 'completed', timerVal, userName.concat(",", avatar + ",last,classic," + sessionStorage.getItem("usedBoardNumber"))]);
-                    resultsWritten = true;
-                }
-                document.location.replace("results.html" + window.location.search);
-            } else { // the goal from the game has not been achieved, even if there is just one black peg left
-                audio.pause();
-                audio = document.getElementById("gameOver"); // audio of the game page
-                audio.play();
-                window.alert("No more moves possible! " + blackPegs + " pegs left and " + timerVal + " elapsed!");
-                if (!resultsWritten) {
-                    localStorage.setItem(Math.floor(Date.now() / 10000), [blackPegs, 'notCompleted', timerVal, userName.concat(",", avatar + ",last,classic," + sessionStorage.getItem("usedBoardNumber"))]);
-                    resultsWritten = true;
-                }
-                document.location.replace("results.html" + window.location.search);
-            }
-        } else { // there are more than one black peg left
-            audio.pause();
-            audio = document.getElementById("gameOver"); // audio of the game page
-            audio.play();
-            window.alert("No more moves possible! " + blackPegs + " pegs left and " + timerVal + " elapsed!");
-            if (!resultsWritten) {
-                localStorage.setItem(Math.floor(Date.now() / 10000), [blackPegs, 'notCompleted', timerVal, userName.concat(",", avatar + ",last,classic," + sessionStorage.getItem("usedBoardNumber"))]);
-                resultsWritten = true;
-            }
-            window.location.replace("results.html" + window.location.search);
-        }
-    };
+	setTimeout(function(){
+		var resultsWritten = false;
+		var timerVal;
+		if (possibleMoves == 0) { // if no more moves are possible
+			var blackPegs = countBlackPegs(); // count the resting black pegs
+			timer.stop(); // stop the timer
+			if (window.innerWidth < 810) {
+				timerVal = document.getElementById("timer2").innerHTML
+			} else {
+				timerVal = document.getElementById("timer1").innerHTML
+			}
+			if (blackPegs == 1) { // if just one black peg is left
+				var lastPegPosition = checkLastPegPosition(); // get the last black pegs position
+				if (lastPegPosition[0] == 3 && lastPegPosition[1] == 3) { // if the last black peg is in the middle of the board the game is completed
+					audio.pause();
+					audio = document.getElementById("winner"); // audio of the game page
+					audio.play();
+					window.alert("Congratulations! You won the game in " + timerVal + "!");
+					if (!resultsWritten) {
+						localStorage.setItem(Math.floor(Date.now() / 10000), [1, 'completed', timerVal, userName.concat(",", avatar + ",last,classic," + sessionStorage.getItem("usedBoardNumber"))]);
+						resultsWritten = true;
+					}
+					document.location.replace("results.html" + window.location.search);
+				} else { // the goal from the game has not been achieved, even if there is just one black peg left
+					audio.pause();
+					audio = document.getElementById("gameOver"); // audio of the game page
+					audio.play();
+					window.alert("No more moves possible! " + blackPegs + " pegs left and " + timerVal + " elapsed!");
+					if (!resultsWritten) {
+						localStorage.setItem(Math.floor(Date.now() / 10000), [blackPegs, 'notCompleted', timerVal, userName.concat(",", avatar + ",last,classic," + sessionStorage.getItem("usedBoardNumber"))]);
+						resultsWritten = true;
+					}
+					document.location.replace("results.html" + window.location.search);
+				}
+			} else { // there are more than one black peg left
+				audio.pause();
+				audio = document.getElementById("gameOver"); // audio of the game page
+				audio.play();
+				window.alert("No more moves possible! " + blackPegs + " pegs left and " + timerVal + " elapsed!");
+				if (!resultsWritten) {
+					localStorage.setItem(Math.floor(Date.now() / 10000), [blackPegs, 'notCompleted', timerVal, userName.concat(",", avatar + ",last,classic," + sessionStorage.getItem("usedBoardNumber"))]);
+					resultsWritten = true;
+				}
+				window.location.replace("results.html" + window.location.search);
+			}
+		}
+	},200);
 }
 
 function getSelectedPeg(event) { // get the clicked position on canvas x and y axis
@@ -424,42 +457,6 @@ function getSelectedPeg(event) { // get the clicked position on canvas x and y a
 }
 
 function togglePeg(x, y) { // toggle a value in the pegArray
-    var pegValue = pegArray[y][x]; // get the value of the clicked peg
-    var highlightCheck = hasHighlighted(); // check if there is a highlighted peg (only one peg can be highlighted at the same time)
-    lastX = highlightCheck[1]; // save the x axis from the last processed pen
-    lastY = highlightCheck[0]; // save the y axis from the last processed pen
-    isInPossiblePegsArray = false; // store if the clicked peg is a valid move (used for checkPossiblePegsArray function)
-    checkPossiblePegsArray(y, x); // execute the check if the clicked peg is a valid move (contained in possiblee pegs array)
-    if (pegValue == 0) { // if the peg is black [0]
-        moveStarted = true; // set the flag to mark a move as started to true
-        possiblePegsArray = checkPossiblePegsForMove(y, x); // possible pegs for a valid move in an array (generate or regenerate the possible pegs array)
-        inPossiblePegsArray = false;
-        if (highlightCheck[0] > -1 && highlightCheck[1] > -1) { // if there is a highlighted peg
-            pegArray[highlightCheck[0]][highlightCheck[1]] = 0; // remove the highlight on the existing highlighted peg
-        };
-        pegValue = 2; // highlight the clicked peg
-    } else if (pegValue == 1) { // if the peg is white [1]
-        if (moveStarted && isInPossiblePegsArray && ((lastY == posY - 2) ||  (lastY == posY + 2) ||  (lastX == posX - 2) || (lastX == posX + 2))) { // if a move has started [moveStarted == true] and the move can be executed
-            if (lastY == (posY - 2)) {
-                deletePeg(lastX, (posY - 1));
-            } else if (lastY == (posY + 2)) {
-                deletePeg(lastX, (posY + 1));
-            } else if (lastX == (posX - 2)) {
-                deletePeg((posX - 1), lastY);
-            } else if (lastX == (posX + 2)) {
-                deletePeg((posX + 1), lastY);
-            };
-            pegValue = 0; // set the peg to black [0]
-            deletePeg(lastX, lastY); // set the last clicked peg to white [1]
-            moveStarted = false; // end the move [moveStarted == false]
-        }
-    } else if (pegValue == 2 && moveStarted) { // if the clicked peg is highlighted [2] and the move is started
-        pegValue = 0; // remove the highlight [0]
-        moveStarted = false; // end the move [moveStarted == false]
-    }
-    pegArray[y][x] = pegValue; // apply the change in pegArray defined above in this method
-    drawCanvas(pegArray); // draw the canvas
-    possibleMoves = countPossibleMoves(); // counting the number of possible moves after having toggeled this peg
 }
 
 function checkPossiblePegsForMove(x, y) { // stores all possible pegs for a valid move in an array
